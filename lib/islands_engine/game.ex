@@ -1,7 +1,9 @@
 defmodule IslandsEngine.Game do
-  alias IslandsEngine.{Board, Guesses, Rules}
+  alias IslandsEngine.{Board, Coordinate, Guesses, Island, Rules}
 
   use GenServer
+
+  @players [:player1, :player2]
 
   def start_link(name) when is_binary(name) do
     GenServer.start_link(__MODULE__, name, [])
@@ -17,9 +19,12 @@ defmodule IslandsEngine.Game do
     GenServer.call(game, {:add_player, name})
   end
 
+  def position_island(game, player, key, row, col) when player in @players do
+    GenServer.call(game, {:position_island, player, key, row, col})
+  end
+
   def handle_call({:add_player, name}, _from, state_data) do
-    with {:ok, rules} <- Rules.check(state_data.rules, :add_player)
-    do
+    with {:ok, rules} <- Rules.check(state_data.rules, :add_player) do
       state_data
       |> update_player2_name(name)
       |> update_rules(rules)
@@ -27,6 +32,24 @@ defmodule IslandsEngine.Game do
     else
       :error -> {:reply, :error, state_data}
     end
+  end
+
+  def handle_call({:position_island, player, key, row, col}, _from, state_data) do
+    board = player_board(state_data, player)
+
+    with {:ok, rules} <- Rules.check(state_data.rules, {:position_islands, player}),
+         {:ok, coordinate} <- Coordinate.new(row, col{:ok, game} = Game.start_link("Fred")state_data = :sys.replace_state(game, fn state_data ->),
+    {:ok, island} <- Island.new(key, coordinate),
+    %{} = board <- Board.position_island(board, key, island) do
+        state_data
+        |> update_board(player, board)
+        |> update_rules(rules)
+        |> reply_success(:ok)
+      else
+        :error -> {:reply, :error, state_data}
+        {:error, :invalid_coordinate} -> {:reply, {:error, :invalid_coordinate}, state_data}
+        {:error, :invalid_island_type} -> {:reply, {:error, :invalid_island_type}, state_data}
+      end
   end
 
   defp update_player2_name(state_data, name) do
@@ -37,7 +60,12 @@ defmodule IslandsEngine.Game do
     %{state_data | rules: rules}
   end
 
+  defp update_board(state_data, player, board),
+    do: Map.update!(state_data, player, fn player -> %{player | board: board} end)
+
   defp reply_success(state_data, reply) do
     {:reply, reply, state_data}
   end
+
+  defp player_board(state_data, player), do: Map.get(state_data, player).board
 end
