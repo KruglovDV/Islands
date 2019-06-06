@@ -4,7 +4,7 @@ defmodule IslandsEngine.Game do
   use GenServer, start: {__MODULE__, :start_link, []}, restart: :transient
 
   @players [:player1, :player2]
-  @timeout 15000
+  @timeout 60 * 60 * 24 * 1000
 
   def start_link(name) when is_binary(name) do
     GenServer.start_link(__MODULE__, name, name: via_tuple(name))
