@@ -116,6 +116,13 @@ defmodule IslandsEngine.Game do
     {:noreply, state_data, @timeout}
   end
 
+  def terminate({:shutdown, :timeout}, state_data) do
+    :ets.delete(:game_state, state_data.player1.name)
+    :ok
+  end
+
+  def terminate(_reason, _state), do: :ok
+
   def via_tuple(name) do
     {:via, Registry, {Registry.Game, name}}
   end
